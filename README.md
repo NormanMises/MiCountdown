@@ -84,11 +84,16 @@ gradle :app:assembleDebug
 
 ### 发布新版
 
-1. 更新 `app/build.gradle` 中的 `versionCode` 和 `versionName`。
-2. 推送对应的 `v*` 标签，例如 `v0.3.0`。
-3. Actions 会运行 `assembleRelease`，校验 APK 的版本号、签名和非调试状态，然后把 `MiCountdown-<版本>.apk` 附到 GitHub Release。
+改 `app/build.gradle` 里的 `versionCode` 和 `versionName`，推到 `main` 就行。
 
-官方仓库通过 Actions Secret `ANDROID_SIGNING_KEYSTORE_B64` 使用既有签名，保证新版可以覆盖安装。分支提交和手动触发只生成供测试的构建产物。
+Actions 发现 `main` 上的版本号还没有对应的 `v<版本>` 标签时，会自动：
+
+1. 运行 `assembleRelease`，校验 APK 的版本号、签名和非调试状态；
+2. 在这个提交上打 `v<版本>` 标签，创建 GitHub Release，并附上 `MiCountdown-<版本>.apk`。
+
+版本号没变的提交、其他分支和 PR 只生成调试版 APK，供测试下载。手动推送 `v*` 标签也会按同样的流程发布。
+
+官方仓库通过 Actions Secret `ANDROID_SIGNING_KEYSTORE_B64` 使用既有签名，保证新版可以覆盖安装。
 
 ## 许可证
 

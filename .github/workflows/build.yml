@@ -13,10 +13,42 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.decide.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      # Release when a v* tag is pushed, or when main carries a versionName
+      # that has no tag yet. Everything else builds a debug APK.
+      - name: Decide whether to release
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)"
+          if [ -z "$version" ]; then
+            echo "::error::Could not read versionName from app/build.gradle."
+            exit 1
+          fi
+          tag="v$version"
+          release=false
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            release=true
+          elif [ "$GITHUB_REF" = refs/heads/main ]; then
+            existing="$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+              --jq "map(select(.ref == \"refs/tags/$tag\")) | length")"
+            if [ "$existing" = 0 ]; then
+              release=true
+            else
+              echo "$tag already exists; building a debug APK."
+            fi
+          fi
+          echo "RELEASE=$release" >> "$GITHUB_ENV"
+          if [ "$release" = true ]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,7 +62,7 @@ jobs:
           gradle-version: '8.9'
 
       - name: Prepare signing key
-        if: github.ref_type == 'tag'
+        if: env.RELEASE == 'true'
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_B64 }}
         run: |
@@ -43,20 +75,25 @@ jobs:
           printf 'MICOUNTDOWN_SIGNING_STORE=%s\n' "$RUNNER_TEMP/micountdown.jks" >> "$GITHUB_ENV"
 
       - name: Build debug APK
-        if: github.ref_type != 'tag'
+        if: env.RELEASE != 'true'
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Build release APK
-        if: github.ref_type == 'tag'
+        if: env.RELEASE == 'true'
         run: gradle --no-daemon :app:assembleRelease
 
       - name: Verify release APK
-        if: github.ref_type == 'tag'
+        if: env.RELEASE == 'true'
         env:
           EXPECTED_CERT: e6fe98b11da667b520f5f48f7cf00c86e477d5331c481c5650097705ce7c11b8
+          TAG: ${{ steps.decide.outputs.tag }}
         run: |
           version="$(jq -er '.elements[0].versionName' app/build/outputs/apk/release/output-metadata.json)"
-          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG does not match APK version $version."
+            exit 1
+          fi
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match APK version $version."
             exit 1
           fi
@@ -74,7 +111,7 @@ jobs:
           cp "$apk" "MiCountdown-$version.apk"
 
       - name: Upload build artifact
-        if: github.ref_type != 'tag'
+        if: env.RELEASE != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: MiCountdown-debug
@@ -82,7 +119,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release artifact
-        if: github.ref_type == 'tag'
+        if: env.RELEASE == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
@@ -90,13 +127,13 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: github.ref_type == 'tag'
+    if: needs.build.outputs.tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     concurrency:
-      group: release-${{ github.ref_name }}
+      group: release-${{ needs.build.outputs.tag }}
       cancel-in-progress: false
     steps:
       - uses: actions/download-artifact@v4
@@ -106,14 +143,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
         run: |
-          tag="$GITHUB_REF_NAME"
+          tag="$TAG"
           apk="MiCountdown-${tag#v}.apk"
           if gh release view "$tag" >/dev/null 2>&1; then
             if gh release view "$tag" --json assets --jq '.assets[].name' | grep -Fqx "$apk"; then
               exit 0
             fi
             gh release upload "$tag" "$apk"
-          else
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
             gh release create "$tag" "$apk" --verify-tag --title "MiCountdown $tag" --generate-notes
+          else
+            # New version on main: tag the commit that was just built.
+            gh release create "$tag" "$apk" --target "$GITHUB_SHA" --title "MiCountdown $tag" --generate-notes
           fi
