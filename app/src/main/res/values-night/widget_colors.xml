@@ -1,10 +1,13 @@
 <resources>
+    <!-- Text -->
     <color name="widget_primary">#FFFFFF</color>
     <color name="widget_number">#FFFFFF</color>
-    <color name="widget_secondary">#FFFFFF</color>
-    <color name="glass_top">#EF000000</color>
-    <color name="glass_center">#D9000000</color>
-    <color name="glass_bottom">#E6000000</color>
-    <color name="glass_rim">#24FFFFFF</color>
-    <color name="glass_sheen">#0CFFFFFF</color>
+    <color name="widget_secondary">#99FFFFFF</color>
+    <color name="widget_accent">#8C9DFF</color>
+
+    <!-- Card -->
+    <color name="card_top">#EB1A1B21</color>
+    <color name="card_bottom">#EB0E0E12</color>
+    <color name="card_glow">#336B78FF</color>
+    <color name="card_rim">#1FFFFFFF</color>
 </resources>

@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.TypedValue;
@@ -20,12 +21,18 @@ import android.widget.RemoteViews;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class CountdownWidget extends AppWidgetProvider {
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
+    private static final DateTimeFormatter THIS_YEAR =
+            DateTimeFormatter.ofPattern("M月d日 EEE", Locale.CHINA);
+    private static final DateTimeFormatter OTHER_YEAR =
+            DateTimeFormatter.ofPattern("yyyy年M月d日 EEE", Locale.CHINA);
 
     static void refresh(Context context) {
         Context app = context.getApplicationContext();
@@ -78,9 +85,10 @@ public class CountdownWidget extends AppWidgetProvider {
             return;
         }
 
-        String title = "最近倒数日";
+        int accent = context.getColor(R.color.widget_accent);
+        String header = "最近倒数日";
+        String title = "点击授权读取日历";
         CharSequence days = "—";
-        String date = "点击授权日历";
         boolean hasEvent = false;
         if (hasCalendarPermission(context)) {
             ZoneId zone = ZoneId.systemDefault();
@@ -89,17 +97,16 @@ public class CountdownWidget extends AppWidgetProvider {
                 CalendarData.Occurrence nearest =
                         CalendarData.nearest(context.getContentResolver(), today, zone);
                 if (nearest == null) {
-                    date = "暂无未来倒数日";
+                    title = "暂无未来的倒数日";
                 } else {
                     hasEvent = true;
                     title = nearest.title();
-                    long remaining = ChronoUnit.DAYS.between(today, nearest.date());
-                    days = formatDays(remaining);
-                    date = nearest.date().toString();
+                    header = formatDate(nearest.date(), today);
+                    days = formatDays(ChronoUnit.DAYS.between(today, nearest.date()), accent);
                 }
             } catch (RuntimeException error) {
                 Log.w("MiCountdown", "Calendar read failed", error);
-                date = "读取失败，点击重试";
+                title = "读取失败，点击重试";
             }
         }
 
@@ -110,7 +117,7 @@ public class CountdownWidget extends AppWidgetProvider {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         if (hasEvent) {
             detail.putExtra(MainActivity.EXTRA_EVENT_TITLE, title);
-            detail.putExtra(MainActivity.EXTRA_EVENT_DATE, date);
+            detail.putExtra(MainActivity.EXTRA_EVENT_DATE, header);
         }
         PendingIntent openApp = PendingIntent.getActivity(context, 0, detail,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -118,7 +125,7 @@ public class CountdownWidget extends AppWidgetProvider {
             RemoteViews views = new RemoteViews(context.getPackageName(), layout);
             views.setTextViewText(R.id.title, title);
             views.setTextViewText(R.id.days, days);
-            views.setTextViewText(R.id.date, date);
+            views.setTextViewText(R.id.date, header);
             views.setOnClickPendingIntent(R.id.card, openApp);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Bundle options = manager.getAppWidgetOptions(id);
@@ -128,13 +135,23 @@ public class CountdownWidget extends AppWidgetProvider {
         }
     }
 
-    private static CharSequence formatDays(long remaining) {
+    private static String formatDate(LocalDate date, LocalDate today) {
+        return (date.getYear() == today.getYear() ? THIS_YEAR : OTHER_YEAR).format(date);
+    }
+
+    private static CharSequence formatDays(long remaining, int accent) {
         if (remaining == 0) {
-            return "今天";
+            SpannableString todayText = new SpannableString("就是今天");
+            todayText.setSpan(new ForegroundColorSpan(accent), 0, todayText.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return todayText;
         }
         String number = Long.toString(remaining);
         SpannableString days = new SpannableString(number + "\u00a0天");
-        days.setSpan(new RelativeSizeSpan(0.48f), number.length(), days.length(),
+        int unit = number.length();
+        days.setSpan(new RelativeSizeSpan(0.42f), unit, days.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        days.setSpan(new ForegroundColorSpan(accent), unit, days.length(),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return days;
     }

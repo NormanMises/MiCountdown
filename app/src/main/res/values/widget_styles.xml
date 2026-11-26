@@ -1,0 +1,81 @@
+<resources>
+    <style name="WidgetCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">13dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:background">@drawable/card</item>
+    </style>
+
+    <style name="WidgetHeaderRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="WidgetDot">
+        <item name="android:layout_width">6dp</item>
+        <item name="android:layout_height">6dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:src">@drawable/dot</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <!-- "12月25日 周五" or a status message. -->
+    <style name="WidgetHeader">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/widget_secondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Event title: up to three lines, shrinks to fit. -->
+    <style name="WidgetTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginTop">7dp</item>
+        <item name="android:gravity">top|start</item>
+        <item name="android:maxLines">3</item>
+        <item name="android:breakStrategy">simple</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">11sp</item>
+        <item name="android:autoSizeMaxTextSize">18sp</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+        <item name="android:lineSpacingExtra">1sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/widget_primary</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <!-- Remaining days: the hero number, anchored bottom-left. -->
+    <style name="WidgetDays">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1.15</item>
+        <item name="android:gravity">bottom|start</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">16sp</item>
+        <item name="android:autoSizeMaxTextSize">48sp</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:textColor">@color/widget_number</item>
+        <item name="android:textSize">48sp</item>
+    </style>
+</resources>

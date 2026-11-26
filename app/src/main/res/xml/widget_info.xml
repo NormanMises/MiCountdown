@@ -4,6 +4,8 @@
     android:targetCellWidth="2"
     android:targetCellHeight="2"
     android:initialLayout="@layout/widget"
+    android:previewLayout="@layout/widget_preview"
+    android:description="@string/widget_description"
     android:updatePeriodMillis="1800000"
     android:resizeMode="none"
     android:widgetCategory="home_screen" />

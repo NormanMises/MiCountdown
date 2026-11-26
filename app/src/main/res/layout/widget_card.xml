@@ -1,66 +1,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/card"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_gravity="center"
-    android:orientation="vertical"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:paddingTop="10dp"
-    android:paddingBottom="9dp"
-    android:background="@drawable/card">
+    style="@style/WidgetCard">
+
+    <LinearLayout style="@style/WidgetHeaderRow">
+        <ImageView style="@style/WidgetDot" />
+        <TextView
+            android:id="@+id/date"
+            style="@style/WidgetHeader"
+            android:text="最近倒数日" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/title"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="3.2"
-        android:gravity="center_vertical"
-        android:maxLines="4"
-        android:breakStrategy="simple"
-        android:ellipsize="end"
-        android:autoSizeTextType="uniform"
-        android:autoSizeMinTextSize="10sp"
-        android:autoSizeMaxTextSize="19sp"
-        android:autoSizeStepGranularity="1sp"
-        android:includeFontPadding="false"
-        android:fontFamily="sans-serif-medium"
-        android:textColor="@color/widget_primary"
-        android:textSize="19sp"
-        android:text="最近倒数日" />
+        style="@style/WidgetTitle"
+        android:text="正在读取…" />
 
     <TextView
         android:id="@+id/days"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="3.8"
-        android:gravity="center_vertical"
-        android:maxLines="1"
-        android:autoSizeTextType="uniform"
-        android:autoSizeMinTextSize="13sp"
-        android:autoSizeMaxTextSize="50sp"
-        android:autoSizeStepGranularity="1sp"
-        android:includeFontPadding="false"
-        android:fontFamily="sans-serif-medium"
-        android:fontFeatureSettings="tnum"
-        android:textColor="@color/widget_number"
-        android:textSize="50sp"
+        style="@style/WidgetDays"
         android:text="—" />
-
-    <TextView
-        android:id="@+id/date"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.5"
-        android:gravity="center_vertical"
-        android:maxLines="1"
-        android:autoSizeTextType="uniform"
-        android:autoSizeMinTextSize="9sp"
-        android:autoSizeMaxTextSize="14sp"
-        android:autoSizeStepGranularity="1sp"
-        android:includeFontPadding="false"
-        android:fontFamily="sans-serif-medium"
-        android:textColor="@color/widget_secondary"
-        android:textSize="14sp"
-        android:text="点击打开" />
 </LinearLayout>

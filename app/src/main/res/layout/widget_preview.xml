@@ -1,0 +1,23 @@
+<!-- Shown in the launcher's widget picker on Android 12+. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout style="@style/WidgetCard">
+
+        <LinearLayout style="@style/WidgetHeaderRow">
+            <ImageView style="@style/WidgetDot" />
+            <TextView
+                style="@style/WidgetHeader"
+                android:text="1月1日 周五" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/WidgetTitle"
+            android:text="元旦" />
+
+        <TextView
+            style="@style/WidgetDays"
+            android:text="36 天" />
+    </LinearLayout>
+</FrameLayout>
