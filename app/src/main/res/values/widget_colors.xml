@@ -1,10 +1,10 @@
 <resources>
-    <color name="widget_primary">#132136</color>
-    <color name="widget_number">#203C73</color>
-    <color name="widget_secondary">#304362</color>
-    <color name="glass_top">#C8F8FCFF</color>
-    <color name="glass_center">#A8DFECFA</color>
-    <color name="glass_bottom">#BAE0DCF7</color>
+    <color name="widget_primary">#000000</color>
+    <color name="widget_number">#000000</color>
+    <color name="widget_secondary">#000000</color>
+    <color name="glass_top">#D9FFFFFF</color>
+    <color name="glass_center">#BDFFFFFF</color>
+    <color name="glass_bottom">#CCFFFFFF</color>
     <color name="glass_rim">#C8FFFFFF</color>
-    <color name="glass_sheen">#47FFFFFF</color>
+    <color name="glass_sheen">#33FFFFFF</color>
 </resources>

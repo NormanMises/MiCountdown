@@ -1,4 +1,4 @@
-# 最近倒数日（MiCountdown）0.2.3
+# 最近倒数日（MiCountdown）0.2.4
 
 Android 桌面小部件。只申请读取日历权限。
 
