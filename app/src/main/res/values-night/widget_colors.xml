@@ -1,0 +1,10 @@
+<resources>
+    <color name="widget_primary">#F0F4FF</color>
+    <color name="widget_number">#CADBFF</color>
+    <color name="widget_secondary">#D3DDF3</color>
+    <color name="glass_top">#C2374B66</color>
+    <color name="glass_center">#B124344C</color>
+    <color name="glass_bottom">#C8292543</color>
+    <color name="glass_rim">#60CEDCF4</color>
+    <color name="glass_sheen">#33E5F0FF</color>
+</resources>
