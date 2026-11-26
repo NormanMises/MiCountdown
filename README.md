@@ -1,4 +1,4 @@
-# 最近倒数日（MiCountdown）0.2.1
+# 最近倒数日（MiCountdown）0.2.2
 
 Android 桌面小部件。只申请读取日历权限。
 
@@ -21,6 +21,10 @@ Android 桌面小部件。只申请读取日历权限。
 ## 构建
 
 使用 JDK 17、Gradle 8.9 或更高版本和 Android SDK 35，运行 `gradle :app:assembleDebug`。也可运行项目中的 Build APK 工作流。
+
+### 发布新版
+
+更新 `app/build.gradle` 的版本号后，将对应的 `v*` 标签推送到 GitHub，例如 `v0.2.2`。Actions 会编译 APK、校验版本和签名，并创建带 APK 的 Release。官方仓库通过 Actions Secret `ANDROID_SIGNING_KEYSTORE_B64` 使用既有签名。分支提交和手动触发会生成供测试下载的构建产物。
 
 ## 许可证
 

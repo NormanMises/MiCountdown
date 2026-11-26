@@ -1,24 +1,107 @@
 name: Build APK
+
 on:
   push:
     branches: [main]
+    tags: ['v*']
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;34.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+
+      - name: Prepare signing key
+        if: github.ref_type == 'tag'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Set ANDROID_SIGNING_KEYSTORE_B64 to the existing APK signing keystore."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/micountdown.jks"
+          printf 'MICOUNTDOWN_SIGNING_STORE=%s\n' "$RUNNER_TEMP/micountdown.jks" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Verify release APK
+        if: github.ref_type == 'tag'
+        env:
+          EXPECTED_CERT: e6fe98b11da667b520f5f48f7cf00c86e477d5331c481c5650097705ce7c11b8
+        run: |
+          version="$(jq -er '.elements[0].versionName' app/build/outputs/apk/debug/output-metadata.json)"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match APK version $version."
+            exit 1
+          fi
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          signature="$("$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$apk")"
+          if ! grep -Fqx "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT" <<< "$signature"; then
+            echo "::error::APK signature does not match the previously distributed APK."
+            exit 1
+          fi
+          cp "$apk" "MiCountdown-$version-debug.apk"
+
+      - name: Upload build artifact
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: MiCountdown-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload release artifact
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: MiCountdown-*-debug.apk
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          apk="MiCountdown-${tag#v}-debug.apk"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            if gh release view "$tag" --json assets --jq '.assets[].name' | grep -Fqx "$apk"; then
+              exit 0
+            fi
+            gh release upload "$tag" "$apk"
+          else
+            gh release create "$tag" "$apk" --verify-tag --title "MiCountdown $tag" --generate-notes
+          fi
