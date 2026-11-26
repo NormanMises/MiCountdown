@@ -1,4 +1,4 @@
-# 最近倒数日（MiCountdown）0.2.4
+# 最近倒数日（MiCountdown）0.2.5
 
 Android 桌面小部件。只申请读取日历权限。
 
@@ -24,7 +24,7 @@ Android 桌面小部件。只申请读取日历权限。
 
 ### 发布新版
 
-更新 `app/build.gradle` 的版本号后，将对应的 `v*` 标签推送到 GitHub，例如 `v0.2.2`。Actions 会编译 APK、校验版本和签名，并创建带 APK 的 Release。官方仓库通过 Actions Secret `ANDROID_SIGNING_KEYSTORE_B64` 使用既有签名。分支提交和手动触发会生成供测试下载的构建产物。
+更新 `app/build.gradle` 的版本号后，将对应的 `v*` 标签推送到 GitHub，例如 `v0.2.5`。Actions 会运行 `assembleRelease`，校验 APK 的版本、签名和调试状态，并将 `MiCountdown-<版本>.apk` 附到 GitHub Release。官方仓库通过 Actions Secret `ANDROID_SIGNING_KEYSTORE_B64` 使用既有签名。分支提交和手动触发会生成供测试下载的构建产物。
 
 ## 许可证
 

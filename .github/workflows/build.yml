@@ -42,26 +42,36 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/micountdown.jks"
           printf 'MICOUNTDOWN_SIGNING_STORE=%s\n' "$RUNNER_TEMP/micountdown.jks" >> "$GITHUB_ENV"
 
-      - name: Build APK
+      - name: Build debug APK
+        if: github.ref_type != 'tag'
         run: gradle --no-daemon :app:assembleDebug
+
+      - name: Build release APK
+        if: github.ref_type == 'tag'
+        run: gradle --no-daemon :app:assembleRelease
 
       - name: Verify release APK
         if: github.ref_type == 'tag'
         env:
           EXPECTED_CERT: e6fe98b11da667b520f5f48f7cf00c86e477d5331c481c5650097705ce7c11b8
         run: |
-          version="$(jq -er '.elements[0].versionName' app/build/outputs/apk/debug/output-metadata.json)"
+          version="$(jq -er '.elements[0].versionName' app/build/outputs/apk/release/output-metadata.json)"
           if [ "$GITHUB_REF_NAME" != "v$version" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match APK version $version."
             exit 1
           fi
-          apk="app/build/outputs/apk/debug/app-debug.apk"
+          apk="app/build/outputs/apk/release/app-release.apk"
+          badging="$("$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging "$apk")"
+          if grep -Fqx 'application-debuggable' <<< "$badging"; then
+            echo "::error::The release APK has debugging enabled."
+            exit 1
+          fi
           signature="$("$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$apk")"
           if ! grep -Fqx "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT" <<< "$signature"; then
             echo "::error::APK signature does not match the previously distributed APK."
             exit 1
           fi
-          cp "$apk" "MiCountdown-$version-debug.apk"
+          cp "$apk" "MiCountdown-$version.apk"
 
       - name: Upload build artifact
         if: github.ref_type != 'tag'
@@ -76,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: MiCountdown-*-debug.apk
+          path: MiCountdown-*.apk
           if-no-files-found: error
 
   publish:
@@ -98,7 +108,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag="$GITHUB_REF_NAME"
-          apk="MiCountdown-${tag#v}-debug.apk"
+          apk="MiCountdown-${tag#v}.apk"
           if gh release view "$tag" >/dev/null 2>&1; then
             if gh release view "$tag" --json assets --jq '.assets[].name' | grep -Fqx "$apk"; then
               exit 0
