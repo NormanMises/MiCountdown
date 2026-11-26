@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'studio.mises.countdown'
  compileSdk 35
- defaultConfig { applicationId 'studio.mises.countdown'; minSdk 26; targetSdk 35; versionCode 4; versionName '0.2.2' }
+ defaultConfig { applicationId 'studio.mises.countdown'; minSdk 26; targetSdk 35; versionCode 5; versionName '0.2.3' }
  def signingStore = System.getenv('MICOUNTDOWN_SIGNING_STORE')
  if (signingStore != null) {
   signingConfigs.debug.storeFile = file(signingStore)
