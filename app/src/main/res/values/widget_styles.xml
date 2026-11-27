@@ -6,9 +6,11 @@
         <item name="android:orientation">vertical</item>
         <item name="android:paddingStart">14dp</item>
         <item name="android:paddingEnd">14dp</item>
-        <item name="android:paddingTop">13dp</item>
-        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <!-- Digits have no descenders, so less padding here looks even with the top. -->
+        <item name="android:paddingBottom">8dp</item>
         <item name="android:background">@drawable/card</item>
+        <item name="android:foreground">@drawable/card_ripple</item>
     </style>
 
     <style name="WidgetHeaderRow">
@@ -26,7 +28,8 @@
         <item name="android:importantForAccessibility">no</item>
     </style>
 
-    <!-- "12月25日 周五" or a status message. -->
+    <!-- "12月25日 周五" or a status message. Regular weight: the grey colour
+         and the lighter weight together keep it below the title. -->
     <style name="WidgetHeader">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
@@ -34,26 +37,30 @@
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
         <item name="android:includeFontPadding">false</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:letterSpacing">0.01</item>
         <item name="android:textColor">@color/widget_secondary</item>
         <item name="android:textSize">12sp</item>
     </style>
 
-    <!-- Event title: up to three lines, shrinks to fit. -->
+    <!-- Event title: up to three lines, shrinks to fit but never below the
+         header, then ellipsizes. Default tracking suits CJK text. -->
     <style name="WidgetTitle">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">0dp</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginTop">7dp</item>
+        <item name="android:layout_marginTop">8dp</item>
         <item name="android:gravity">top|start</item>
         <item name="android:maxLines">3</item>
         <item name="android:breakStrategy">simple</item>
         <item name="android:ellipsize">end</item>
         <item name="android:autoSizeTextType">uniform</item>
-        <item name="android:autoSizeMinTextSize">11sp</item>
+        <item name="android:autoSizeMinTextSize">14sp</item>
         <item name="android:autoSizeMaxTextSize">18sp</item>
         <item name="android:autoSizeStepGranularity">1sp</item>
-        <item name="android:lineSpacingExtra">1sp</item>
+        <!-- A multiplier scales the leading with the auto-sized text. -->
+        <item name="android:lineSpacingMultiplier">1.12</item>
         <item name="android:includeFontPadding">false</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/widget_primary</item>
@@ -74,8 +81,23 @@
         <item name="android:includeFontPadding">false</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:fontFeatureSettings">tnum</item>
-        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:letterSpacing">-0.03</item>
         <item name="android:textColor">@color/widget_number</item>
         <item name="android:textSize">48sp</item>
+    </style>
+
+    <!-- Replaces the number when there is no event: what to do next. -->
+    <style name="WidgetHint">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textColor">@color/widget_accent</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:visibility">gone</item>
     </style>
 </resources>

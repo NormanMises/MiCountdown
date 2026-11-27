@@ -2,7 +2,7 @@
     <!-- Base: near-opaque surface so text stays readable on any wallpaper. -->
     <item>
         <shape android:shape="rectangle">
-            <corners android:radius="24dp" />
+            <corners android:radius="@dimen/widget_radius" />
             <gradient
                 android:angle="270"
                 android:startColor="@color/card_top"
@@ -13,7 +13,7 @@
     <!-- Soft wash of the icon's blue from the top-right corner. -->
     <item android:top="1dp" android:left="1dp" android:right="1dp" android:bottom="1dp">
         <shape android:shape="rectangle">
-            <corners android:radius="23dp" />
+            <corners android:radius="@dimen/widget_radius" />
             <gradient
                 android:angle="225"
                 android:startColor="@color/card_glow"

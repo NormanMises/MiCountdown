@@ -17,6 +17,9 @@
 
     <TextView
         android:id="@+id/days"
-        style="@style/WidgetDays"
-        android:text="—" />
+        style="@style/WidgetDays" />
+
+    <TextView
+        android:id="@+id/hint"
+        style="@style/WidgetHint" />
 </LinearLayout>

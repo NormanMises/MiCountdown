@@ -17,6 +17,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import java.time.LocalDate;
@@ -28,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class CountdownWidget extends AppWidgetProvider {
-    private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
+    static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
     private static final DateTimeFormatter THIS_YEAR =
             DateTimeFormatter.ofPattern("M月d日 EEE", Locale.CHINA);
     private static final DateTimeFormatter OTHER_YEAR =
@@ -80,52 +81,64 @@ public class CountdownWidget extends AppWidgetProvider {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    /** What the card shows; shared by the widget and the app screen. */
+    record Snapshot(String header, String title, CharSequence days, String hint) {
+        boolean hasEvent() {
+            return days != null;
+        }
+    }
+
+    /** Reads the calendar; call off the main thread. */
+    static Snapshot load(Context context) {
+        if (!hasCalendarPermission(context)) {
+            return new Snapshot("最近倒数日", "读取小米日历里的倒数日", null, "点按授权");
+        }
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zone);
+        try {
+            CalendarData.Occurrence nearest =
+                    CalendarData.nearest(context.getContentResolver(), today, zone);
+            if (nearest == null) {
+                return new Snapshot("最近倒数日", "暂无未来的倒数日", null, "在小米日历中添加");
+            }
+            return new Snapshot(formatDate(nearest.date(), today), nearest.title(),
+                    formatDays(ChronoUnit.DAYS.between(today, nearest.date()),
+                            context.getColor(R.color.widget_accent)),
+                    null);
+        } catch (RuntimeException error) {
+            Log.w("MiCountdown", "Calendar read failed", error);
+            return new Snapshot("最近倒数日", "读取失败", null, "点按重试");
+        }
+    }
+
     private static void render(Context context, AppWidgetManager manager, int[] ids) {
         if (ids.length == 0) {
             return;
         }
 
-        int accent = context.getColor(R.color.widget_accent);
-        String header = "最近倒数日";
-        String title = "点击授权读取日历";
-        CharSequence days = "—";
-        boolean hasEvent = false;
-        if (hasCalendarPermission(context)) {
-            ZoneId zone = ZoneId.systemDefault();
-            LocalDate today = LocalDate.now(zone);
-            try {
-                CalendarData.Occurrence nearest =
-                        CalendarData.nearest(context.getContentResolver(), today, zone);
-                if (nearest == null) {
-                    title = "暂无未来的倒数日";
-                } else {
-                    hasEvent = true;
-                    title = nearest.title();
-                    header = formatDate(nearest.date(), today);
-                    days = formatDays(ChronoUnit.DAYS.between(today, nearest.date()), accent);
-                }
-            } catch (RuntimeException error) {
-                Log.w("MiCountdown", "Calendar read failed", error);
-                title = "读取失败，点击重试";
-            }
-        }
-
+        Snapshot snapshot = load(context);
         boolean night = (context.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         int layout = night ? R.layout.widget_night : R.layout.widget;
-        Intent detail = new Intent(context, MainActivity.class)
+        Intent open = new Intent(context, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        if (hasEvent) {
-            detail.putExtra(MainActivity.EXTRA_EVENT_TITLE, title);
-            detail.putExtra(MainActivity.EXTRA_EVENT_DATE, header);
-        }
-        PendingIntent openApp = PendingIntent.getActivity(context, 0, detail,
+        PendingIntent openApp = PendingIntent.getActivity(context, 0, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         for (int id : ids) {
             RemoteViews views = new RemoteViews(context.getPackageName(), layout);
-            views.setTextViewText(R.id.title, title);
-            views.setTextViewText(R.id.days, days);
-            views.setTextViewText(R.id.date, header);
+            views.setTextViewText(R.id.date, snapshot.header());
+            views.setTextViewText(R.id.title, snapshot.title());
+            // Without an event, a short call to action takes the number's place
+            // instead of a giant placeholder dash.
+            if (snapshot.hasEvent()) {
+                views.setTextViewText(R.id.days, snapshot.days());
+                views.setViewVisibility(R.id.days, View.VISIBLE);
+                views.setViewVisibility(R.id.hint, View.GONE);
+            } else {
+                views.setTextViewText(R.id.hint, snapshot.hint());
+                views.setViewVisibility(R.id.days, View.GONE);
+                views.setViewVisibility(R.id.hint, View.VISIBLE);
+            }
             views.setOnClickPendingIntent(R.id.card, openApp);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Bundle options = manager.getAppWidgetOptions(id);
@@ -139,7 +152,7 @@ public class CountdownWidget extends AppWidgetProvider {
         return (date.getYear() == today.getYear() ? THIS_YEAR : OTHER_YEAR).format(date);
     }
 
-    private static CharSequence formatDays(long remaining, int accent) {
+    static CharSequence formatDays(long remaining, int accent) {
         if (remaining == 0) {
             SpannableString todayText = new SpannableString("就是今天");
             todayText.setSpan(new ForegroundColorSpan(accent), 0, todayText.length(),

@@ -9,5 +9,7 @@
     <color name="card_top">#F5FFFFFF</color>
     <color name="card_bottom">#E8FFFFFF</color>
     <color name="card_glow">#2664D6FF</color>
-    <color name="card_rim">#B3FFFFFF</color>
+    <!-- A faint dark hairline keeps the card visible on light wallpapers. -->
+    <color name="card_rim">#14000000</color>
+    <color name="card_ripple">#14000000</color>
 </resources>
