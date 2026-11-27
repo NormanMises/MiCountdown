@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="artwork/micountdown-icon.svg" width="96" alt="最近倒数日图标">
+<img src="artwork/micountdown-icon.png" width="96" alt="最近倒数日图标">
 
 # 最近倒数日 · MiCountdown
 
