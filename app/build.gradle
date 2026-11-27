@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'studio.mises.countdown'
  compileSdk 35
- defaultConfig { applicationId 'studio.mises.countdown'; minSdk 26; targetSdk 35; versionCode 8; versionName '0.3.0' }
+ defaultConfig { applicationId 'studio.mises.countdown'; minSdk 26; targetSdk 35; versionCode 9; versionName '0.4.0' }
  def signingStore = System.getenv('MICOUNTDOWN_SIGNING_STORE')
  if (signingStore != null) {
   // Use the existing signing certificate so installed versions can be upgraded.
