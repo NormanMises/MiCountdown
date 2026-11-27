@@ -77,6 +77,13 @@
                     android:layout_marginTop="4dp"
                     android:textSize="13sp"
                     android:text="只申请「读取日历」这一项权限，用来找到最近的倒数日。不联网，不收集任何数据。" />
+
+                <TextView
+                    style="@style/AppBody"
+                    android:layout_marginTop="8dp"
+                    android:textSize="13sp"
+                    android:textColor="@color/widget_primary"
+                    android:text="授权时请选择「始终允许」。选「仅在使用中允许」的话，小部件在后台刷新时会读不到日历。" />
             </LinearLayout>
         </LinearLayout>
 
