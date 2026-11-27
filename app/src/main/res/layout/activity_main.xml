@@ -40,6 +40,85 @@
                 android:layout_gravity="center" />
         </FrameLayout>
 
+        <!-- Shown when GitHub has a newer release. -->
+        <LinearLayout
+            android:id="@+id/update"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginEnd="12dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/dot" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/update_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/widget_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/update_detail"
+                    style="@style/AppBody"
+                    android:layout_marginTop="2dp"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/update_download"
+                style="@style/AppButton.Text"
+                android:text="下载" />
+        </LinearLayout>
+
+        <!-- Every upcoming countdown; a repeating one appears once, at its next date. -->
+        <LinearLayout
+            android:id="@+id/list_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/list_heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:textColor="@color/widget_secondary"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/surface"
+                android:divider="@drawable/divider"
+                android:orientation="vertical"
+                android:showDividers="middle" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/permission_note"
             android:layout_width="match_parent"
@@ -76,7 +155,7 @@
                     style="@style/AppBody"
                     android:layout_marginTop="4dp"
                     android:textSize="13sp"
-                    android:text="只申请「读取日历」这一项权限，用来找到最近的倒数日。不联网，不收集任何数据。" />
+                    android:text="只申请「读取日历」这一项权限，用来找到最近的倒数日。除了检查更新不联网，不收集任何数据。" />
 
                 <TextView
                     style="@style/AppBody"
@@ -122,6 +201,7 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/footnote"
             style="@style/AppBody"
             android:layout_marginTop="12dp"
             android:textSize="12sp"

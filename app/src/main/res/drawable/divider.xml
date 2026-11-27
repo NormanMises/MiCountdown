@@ -1,0 +1,9 @@
+<!-- Hairline between list rows, inset to line up with the row text. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="16dp"
+    android:insetRight="16dp">
+    <shape android:shape="rectangle">
+        <size android:height="1px" />
+        <solid android:color="@color/app_divider" />
+    </shape>
+</inset>

@@ -4,4 +4,5 @@
     <!-- The night accent is light, so dark text keeps contrast on it. -->
     <color name="app_on_accent">#0E0E12</color>
     <color name="app_pressed">#1FFFFFFF</color>
+    <color name="app_divider">#14FFFFFF</color>
 </resources>

@@ -3,4 +3,5 @@
     <color name="app_surface">#FFFFFF</color>
     <color name="app_on_accent">#FFFFFF</color>
     <color name="app_pressed">#14000000</color>
+    <color name="app_divider">#0F000000</color>
 </resources>

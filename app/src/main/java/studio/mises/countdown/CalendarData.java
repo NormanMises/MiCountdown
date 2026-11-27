@@ -16,8 +16,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,7 +47,16 @@ final class CalendarData {
     }
 
     static Occurrence nearest(ContentResolver resolver, LocalDate today, ZoneId zone) {
-        Occurrence nearest = null;
+        List<Occurrence> all = upcoming(resolver, today, zone);
+        return all.isEmpty() ? null : all.get(0);
+    }
+
+    /**
+     * Every countdown with a date today or later, soonest first. A repeating
+     * countdown appears once, at its next occurrence.
+     */
+    static List<Occurrence> upcoming(ContentResolver resolver, LocalDate today, ZoneId zone) {
+        Map<Long, Occurrence> byEvent = new HashMap<>();
         Set<Long> standardRecurring = new HashSet<>();
         try (Cursor events = resolver.query(Events.CONTENT_URI, EVENT_COLUMNS,
                 Events.HAS_EXTENDED_PROPERTIES + "=? AND " + Events.DELETED + "=0 AND ("
@@ -54,7 +66,7 @@ final class CalendarData {
                 throw new IllegalStateException("日历不可读取");
             }
             if (!events.moveToFirst()) {
-                return null;
+                return new ArrayList<>();
             }
 
             Map<Long, CountdownInfo> countdowns = readCountdownInfo(resolver);
@@ -63,29 +75,28 @@ final class CalendarData {
                 CountdownInfo info = countdowns.get(id);
                 if (info != null) {
                     LocalDate anchor = dateAt(info.timeMillis(), zone);
-                    nearest = earlier(nearest, id, events.getString(1),
+                    keepEarliest(byEvent, id, events.getString(1),
                             CountdownDates.next(anchor, info.repeat(), today), today);
                 } else if (hasContent(events.getString(4)) || hasContent(events.getString(5))) {
                     standardRecurring.add(id);
                 } else if (!events.isNull(2)) {
                     ZoneId eventZone = events.getInt(3) != 0 ? ZoneOffset.UTC : zone;
-                    nearest = earlier(nearest, id, events.getString(1),
+                    keepEarliest(byEvent, id, events.getString(1),
                             dateAt(events.getLong(2), eventZone), today);
                 }
             } while (events.moveToNext());
         }
 
-        if (standardRecurring.isEmpty()) {
-            return nearest;
-        }
-
         // A native Xiaomi countdown carries its own repeat rule. CalendarContract repeats
         // are expanded by the provider for records without Xiaomi's countdown metadata.
-        LocalDate limit = today.plusYears(INSTANCE_LOOKAHEAD_YEARS);
-        if (nearest != null && nearest.date().isBefore(limit)) {
-            limit = nearest.date();
+        if (!standardRecurring.isEmpty()) {
+            addInstances(resolver, today, today.plusYears(INSTANCE_LOOKAHEAD_YEARS), zone,
+                    standardRecurring, byEvent);
         }
-        return nearestInstance(resolver, today, limit, zone, standardRecurring, nearest);
+
+        List<Occurrence> all = new ArrayList<>(byEvent.values());
+        all.sort(Comparator.comparing(Occurrence::date).thenComparingLong(Occurrence::eventId));
+        return all;
     }
 
     private static Map<Long, CountdownInfo> readCountdownInfo(ContentResolver resolver) {
@@ -106,8 +117,8 @@ final class CalendarData {
         return countdowns;
     }
 
-    private static Occurrence nearestInstance(ContentResolver resolver, LocalDate today,
-            LocalDate limit, ZoneId zone, Set<Long> eventIds, Occurrence nearest) {
+    private static void addInstances(ContentResolver resolver, LocalDate today,
+            LocalDate limit, ZoneId zone, Set<Long> eventIds, Map<Long, Occurrence> byEvent) {
         Uri.Builder uri = Instances.CONTENT_URI.buildUpon();
         // Cover both UTC dates for all-day events and local dates for timed events.
         ContentUris.appendId(uri, today.minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
@@ -123,28 +134,26 @@ final class CalendarData {
                     ZoneId eventZone = instances.getInt(3) != 0 ? ZoneOffset.UTC : zone;
                     LocalDate date = dateAt(instances.getLong(2), eventZone);
                     if (!date.isAfter(limit)) {
-                        nearest = earlier(nearest, id, instances.getString(1), date, today);
+                        keepEarliest(byEvent, id, instances.getString(1), date, today);
                     }
                 }
             }
         }
-        return nearest;
     }
 
     private static LocalDate dateAt(long millis, ZoneId zone) {
         return Instant.ofEpochMilli(millis).atZone(zone).toLocalDate();
     }
 
-    private static Occurrence earlier(Occurrence current, long id, String title,
+    private static void keepEarliest(Map<Long, Occurrence> byEvent, long id, String title,
             LocalDate date, LocalDate today) {
         if (date == null || date.isBefore(today)) {
-            return current;
+            return;
         }
-        if (current == null || date.isBefore(current.date())
-                || (date.equals(current.date()) && id < current.eventId())) {
-            return new Occurrence(id, title, date);
+        Occurrence current = byEvent.get(id);
+        if (current == null || date.isBefore(current.date())) {
+            byEvent.put(id, new Occurrence(id, title, date));
         }
-        return current;
     }
 
     private static boolean hasContent(String value) {

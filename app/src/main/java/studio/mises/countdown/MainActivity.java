@@ -4,8 +4,16 @@ import android.Manifest;
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
@@ -13,6 +21,11 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class MainActivity extends Activity {
     private static final int CALENDAR_PERMISSION_REQUEST = 1;
@@ -28,6 +41,13 @@ public class MainActivity extends Activity {
     private Button secondary;
     private TextView installed;
     private LinearLayout secondaryRow;
+    private View update;
+    private TextView updateTitle;
+    private TextView updateDetail;
+    private Button updateDownload;
+    private View listSection;
+    private TextView listHeading;
+    private LinearLayout list;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +69,17 @@ public class MainActivity extends Activity {
         secondary = findViewById(R.id.secondary);
         installed = findViewById(R.id.installed);
         secondaryRow = findViewById(R.id.secondary_row);
+        update = findViewById(R.id.update);
+        updateTitle = findViewById(R.id.update_title);
+        updateDetail = findViewById(R.id.update_detail);
+        updateDownload = findViewById(R.id.update_download);
+        listSection = findViewById(R.id.list_section);
+        listHeading = findViewById(R.id.list_heading);
+        list = findViewById(R.id.list);
+
+        TextView footnote = findViewById(R.id.footnote);
+        footnote.setText("版本 " + UpdateChecker.currentVersion(this)
+                + " · 打开本页时会刷新小部件；之后系统约每 30 分钟自动刷新一次。");
     }
 
     @Override
@@ -84,8 +115,42 @@ public class MainActivity extends Activity {
 
         CountdownWidget.WORKER.execute(() -> {
             CountdownWidget.Snapshot snapshot = CountdownWidget.load(this);
-            runOnUiThread(() -> show(snapshot));
+            List<CalendarData.Occurrence> all = loadAll();
+            runOnUiThread(() -> {
+                show(snapshot);
+                showList(all);
+            });
         });
+        checkForUpdate();
+    }
+
+    /** Runs on its own thread so a slow network never delays widget rendering. */
+    private void checkForUpdate() {
+        new Thread(() -> {
+            UpdateChecker.Release release = UpdateChecker.newerRelease(getApplicationContext());
+            runOnUiThread(() -> {
+                if (isDestroyed()) {
+                    return;
+                }
+                if (release == null) {
+                    update.setVisibility(View.GONE);
+                    return;
+                }
+                updateTitle.setText("有新版本 " + release.version());
+                updateDetail.setText("当前 " + UpdateChecker.currentVersion(this)
+                        + "，下载后直接安装即可覆盖升级");
+                updateDownload.setOnClickListener(view -> openLink(release.downloadUrl()));
+                update.setVisibility(View.VISIBLE);
+            });
+        }, "update-check").start();
+    }
+
+    private void openLink(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (android.content.ActivityNotFoundException error) {
+            Toast.makeText(this, "没有可以打开链接的浏览器", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void show(CountdownWidget.Snapshot snapshot) {
@@ -99,6 +164,60 @@ public class MainActivity extends Activity {
             days.setVisibility(View.GONE);
             hint.setVisibility(View.GONE); // The buttons below say what to do.
         }
+    }
+
+    /** Every upcoming countdown, or null when the calendar cannot be read. */
+    private List<CalendarData.Occurrence> loadAll() {
+        if (!CountdownWidget.hasCalendarPermission(this)) {
+            return null;
+        }
+        ZoneId zone = ZoneId.systemDefault();
+        try {
+            return CalendarData.upcoming(getContentResolver(), LocalDate.now(zone), zone);
+        } catch (RuntimeException error) {
+            Log.w("MiCountdown", "Calendar read failed", error);
+            return null;
+        }
+    }
+
+    private void showList(List<CalendarData.Occurrence> all) {
+        list.removeAllViews();
+        // A single countdown is already the card above; a list of one adds nothing.
+        if (all == null || all.size() < 2) {
+            listSection.setVisibility(View.GONE);
+            return;
+        }
+        listHeading.setText("全部倒数日 · " + all.size());
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        int accent = getColor(R.color.widget_accent);
+        LayoutInflater inflater = getLayoutInflater();
+        for (CalendarData.Occurrence occurrence : all) {
+            View row = inflater.inflate(R.layout.item_countdown, list, false);
+            ((TextView) row.findViewById(R.id.row_title)).setText(occurrence.title());
+            ((TextView) row.findViewById(R.id.row_date))
+                    .setText(CountdownWidget.formatDate(occurrence.date(), today));
+            ((TextView) row.findViewById(R.id.row_days))
+                    .setText(rowDays(ChronoUnit.DAYS.between(today, occurrence.date()), accent));
+            list.addView(row);
+        }
+        listSection.setVisibility(View.VISIBLE);
+    }
+
+    private static CharSequence rowDays(long remaining, int accent) {
+        if (remaining == 0) {
+            SpannableString today = new SpannableString("今天");
+            today.setSpan(new ForegroundColorSpan(accent), 0, today.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return today;
+        }
+        String number = Long.toString(remaining);
+        SpannableString days = new SpannableString(number + "\u00a0天");
+        int unit = number.length();
+        days.setSpan(new RelativeSizeSpan(0.65f), unit, days.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        days.setSpan(new ForegroundColorSpan(accent), unit, days.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return days;
     }
 
     private void showPrimary(String label, Runnable action) {

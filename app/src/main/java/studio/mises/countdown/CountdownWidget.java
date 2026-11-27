@@ -148,7 +148,7 @@ public class CountdownWidget extends AppWidgetProvider {
         }
     }
 
-    private static String formatDate(LocalDate date, LocalDate today) {
+    static String formatDate(LocalDate date, LocalDate today) {
         return (date.getYear() == today.getYear() ? THIS_YEAR : OTHER_YEAR).format(date);
     }
 
