@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     private View listSection;
     private TextView listHeading;
     private LinearLayout list;
+    private Button checkUpdate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,9 +78,10 @@ public class MainActivity extends Activity {
         listHeading = findViewById(R.id.list_heading);
         list = findViewById(R.id.list);
 
-        TextView footnote = findViewById(R.id.footnote);
-        footnote.setText("版本 " + UpdateChecker.currentVersion(this)
-                + " · 打开本页时会刷新小部件；之后系统约每 30 分钟自动刷新一次。");
+        ((TextView) findViewById(R.id.version))
+                .setText("版本 " + UpdateChecker.currentVersion(this));
+        checkUpdate = findViewById(R.id.check_update);
+        checkUpdate.setOnClickListener(view -> checkForUpdateNow());
     }
 
     @Override
@@ -129,20 +131,64 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             UpdateChecker.Release release = UpdateChecker.newerRelease(getApplicationContext());
             runOnUiThread(() -> {
+                if (!isDestroyed()) {
+                    showUpdate(release);
+                }
+            });
+        }, "update-check").start();
+    }
+
+    /** The button reports its result in place instead of in a toast. */
+    private void checkForUpdateNow() {
+        checkUpdate.setEnabled(false);
+        checkUpdate.setText("检查中…");
+        new Thread(() -> {
+            UpdateChecker.Release release = null;
+            boolean failed = false;
+            try {
+                release = UpdateChecker.newerRelease(getApplicationContext(), true);
+            } catch (java.io.IOException error) {
+                failed = true;
+            }
+            UpdateChecker.Release result = release;
+            boolean error = failed;
+            runOnUiThread(() -> {
                 if (isDestroyed()) {
                     return;
                 }
-                if (release == null) {
-                    update.setVisibility(View.GONE);
+                checkUpdate.setEnabled(true);
+                if (error) {
+                    checkUpdate.setText("检查失败，点按重试");
                     return;
                 }
-                updateTitle.setText("有新版本 " + release.version());
-                updateDetail.setText("当前 " + UpdateChecker.currentVersion(this)
-                        + "，下载后直接安装即可覆盖升级");
-                updateDownload.setOnClickListener(view -> openLink(release.downloadUrl()));
-                update.setVisibility(View.VISIBLE);
+                showUpdate(result);
+                if (result != null) {
+                    checkUpdate.setText("检查更新");
+                    // The banner sits near the top; bring it into view.
+                    ((android.widget.ScrollView) findViewById(R.id.root))
+                            .smoothScrollTo(0, Math.max(0, update.getTop() - 24));
+                } else {
+                    checkUpdate.setText("已是最新版本");
+                    checkUpdate.postDelayed(() -> {
+                        if ("已是最新版本".contentEquals(checkUpdate.getText())) {
+                            checkUpdate.setText("检查更新");
+                        }
+                    }, 2000);
+                }
             });
         }, "update-check").start();
+    }
+
+    private void showUpdate(UpdateChecker.Release release) {
+        if (release == null) {
+            update.setVisibility(View.GONE);
+            return;
+        }
+        updateTitle.setText("有新版本 " + release.version());
+        updateDetail.setText("当前 " + UpdateChecker.currentVersion(this)
+                + "，下载后直接安装即可覆盖升级");
+        updateDownload.setOnClickListener(view -> openLink(release.downloadUrl()));
+        update.setVisibility(View.VISIBLE);
     }
 
     private void openLink(String url) {

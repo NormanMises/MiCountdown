@@ -41,9 +41,21 @@ final class UpdateChecker {
      * and otherwise answers from the last result. Call off the main thread.
      */
     static Release newerRelease(Context context) {
+        try {
+            return newerRelease(context, false);
+        } catch (IOException error) {
+            return null; // Not thrown when not forced.
+        }
+    }
+
+    /**
+     * Like {@link #newerRelease(Context)}; with {@code force} it always asks
+     * GitHub and reports a failed request instead of using the last result.
+     */
+    static Release newerRelease(Context context, boolean force) throws IOException {
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         long now = System.currentTimeMillis();
-        if (now - prefs.getLong("checkedAt", 0) >= CHECK_INTERVAL_MILLIS) {
+        if (force || now - prefs.getLong("checkedAt", 0) >= CHECK_INTERVAL_MILLIS) {
             try {
                 Release latest = fetchLatest();
                 prefs.edit()
@@ -53,6 +65,9 @@ final class UpdateChecker {
                         .apply();
             } catch (IOException | RuntimeException | org.json.JSONException error) {
                 Log.i("MiCountdown", "Update check failed", error);
+                if (force) {
+                    throw new IOException(error);
+                }
             }
         }
         String version = prefs.getString("version", null);
